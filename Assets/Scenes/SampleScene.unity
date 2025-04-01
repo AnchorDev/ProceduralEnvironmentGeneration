@@ -556,7 +556,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 256
   depth: 256
-  height: 20
+  height: 24
   scale: 20
 --- !u!218 &514908059
 Terrain:

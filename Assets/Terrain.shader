@@ -56,14 +56,17 @@ Shader "Custom/Terrain"
                 fixed4 col1 = tex2D(_Texture1, i.uv);
                 fixed4 col2 = tex2D(_Texture2, i.uv);
                 fixed4 col3 = tex2D(_Texture3, i.uv);
-
+            
                 if (i.normHeight < _BlendHeight1)
                     return col1;
                 else if (i.normHeight < _BlendHeight2)
                     return lerp(col1, col2, (i.normHeight - _BlendHeight1) / (_BlendHeight2 - _BlendHeight1));
+                else if (i.normHeight < 0.85)
+                    return lerp(col2, col3, (i.normHeight - _BlendHeight2) / (0.85 - _BlendHeight2));
                 else
                     return col3;
             }
+            
             ENDCG
         }
     }

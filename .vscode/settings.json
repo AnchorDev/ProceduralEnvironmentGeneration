@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Procedural environment generation.sln"
+    "dotnet.defaultSolution": "ProceduralEnvironmentGeneration.sln"
 }
