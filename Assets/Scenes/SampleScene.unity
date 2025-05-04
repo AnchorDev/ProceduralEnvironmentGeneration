@@ -557,7 +557,9 @@ MonoBehaviour:
   width: 256
   depth: 256
   height: 24
-  scale: 20
+  scale1: 20
+  scale2: 5
+  influence: 0.5
 --- !u!218 &514908059
 Terrain:
   m_ObjectHideFlags: 0
