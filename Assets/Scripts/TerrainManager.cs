@@ -19,7 +19,7 @@ public class TerrainManager : MonoBehaviour
         forestPlacer.terrain = terrain;
         forestPlacer.treePrefabs = treePrefabs;
 
-        Invoke(nameof(DelayedForestPlacement), 0.5f); // krótka pauza na załadowanie miasta
+        Invoke(nameof(DelayedForestPlacement), 0.5f);
     }
 
     void DelayedForestPlacement()

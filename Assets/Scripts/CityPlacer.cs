@@ -6,26 +6,24 @@ public class CityPlacer : MonoBehaviour
     public Terrain terrain;
     public GameObject cityPrefab;
     public float citySize = 40f;
-    public float minFlatness = 0.995f;
-    public int sampleRadius = 4;
+    public float cityYOffset = 1f;
+    public float waterHeight = 5.5f;
 
-    [Header("Vertical Offset")]
-    public float verticalOffset = 0f; // dodatkowe podniesienie, np. jeśli pivot jest pod ziemią
-
-    [HideInInspector]
-    public Vector3 cityWorldPos;
+    [HideInInspector] public Vector3 cityWorldPos;
+    [HideInInspector] public float cityRadius;
 
     private TerrainData tData;
     private float[,] heights;
     private int res;
     private float maxHeight;
 
-    private float flattestDiff = float.MaxValue;
-    private Vector2Int flattestPos = Vector2Int.zero;
+    private bool cityPlaced = false;
 
     void Start()
     {
-        if (!terrain || !cityPrefab) return;
+        if (!terrain || !cityPrefab || cityPlaced) return;
+
+        Random.InitState(System.DateTime.Now.GetHashCode());
 
         tData = terrain.terrainData;
         heights = tData.GetHeights(0, 0, tData.heightmapResolution, tData.heightmapResolution);
@@ -33,7 +31,9 @@ public class CityPlacer : MonoBehaviour
         maxHeight = tData.size.y;
 
         TryPlaceCity();
+        cityPlaced = true;
     }
+
 
     void TryPlaceCity()
     {
@@ -42,53 +42,63 @@ public class CityPlacer : MonoBehaviour
 
         for (int i = 0; i < attempts; i++)
         {
-            int x = Random.Range(sampleRadius, res - sampleRadius - sizeInSamples);
-            int y = Random.Range(sampleRadius, res - sampleRadius - sizeInSamples);
+            int x = Random.Range(0, res - sizeInSamples);
+            int y = Random.Range(0, res - sizeInSamples);
 
-            if (!IsFlat(x, y, sizeInSamples)) continue;
+            if (!IsAreaDry(x, y, sizeInSamples)) continue;
 
-            // Środek miasta
-            int midX = x + sizeInSamples / 2;
-            int midY = y + sizeInSamples / 2;
+            float avgHeight = GetAverageHeight(x, y, sizeInSamples);
+            FlattenArea(x, y, sizeInSamples, avgHeight);
 
-            Vector3 pos = HeightToWorldPos(midX, midY);
-            pos.y += verticalOffset;
+            Vector3 pos = HeightToWorldPos(x + sizeInSamples / 2, y + sizeInSamples / 2);
+            pos.y = avgHeight * maxHeight + cityYOffset;
 
-            GameObject city = Instantiate(cityPrefab, pos, Quaternion.identity, transform);
+            Instantiate(cityPrefab, pos, Quaternion.identity, transform);
             cityWorldPos = pos;
+            cityRadius = citySize * 0.6f; // dla uników drzew, niech lekko wykracza
 
             Debug.Log("City placed at: " + pos);
             return;
         }
 
-        Debug.LogWarning("Could not find flat area for city.");
-        Debug.Log($"Flattest area found at ({flattestPos.x}, {flattestPos.y}) with max height difference: {flattestDiff}");
+        Debug.LogWarning("City placement failed.");
     }
 
-    bool IsFlat(int cx, int cy, int size)
+    bool IsAreaDry(int xStart, int yStart, int size)
     {
-        float refH = heights[cy, cx];
-        float maxDiff = 0f;
+        float normWater = waterHeight / maxHeight;
 
-        for (int y = cy; y < cy + size; y++)
+        for (int y = yStart; y < yStart + size; y++)
         {
-            for (int x = cx; x < cx + size; x++)
+            for (int x = xStart; x < xStart + size; x++)
             {
-                float h = heights[y, x];
-                float diff = Mathf.Abs(h - refH);
-                if (diff > maxDiff) maxDiff = diff;
-
-                if (diff > (1f - minFlatness)) return false;
+                if (heights[y, x] < normWater + 0.01f)
+                    return false;
             }
         }
 
-        if (maxDiff < flattestDiff)
-        {
-            flattestDiff = maxDiff;
-            flattestPos = new Vector2Int(cx, cy);
-        }
-
         return true;
+    }
+
+    float GetAverageHeight(int xStart, int yStart, int size)
+    {
+        float sum = 0f;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                sum += heights[yStart + y, xStart + x];
+
+        return sum / (size * size);
+    }
+
+    void FlattenArea(int xStart, int yStart, int size, float flatHeight)
+    {
+        float[,] newHeights = new float[size, size];
+
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                newHeights[y, x] = flatHeight;
+
+        tData.SetHeights(xStart, yStart, newHeights);
     }
 
     Vector3 HeightToWorldPos(int x, int y)
@@ -97,12 +107,11 @@ public class CityPlacer : MonoBehaviour
         float yf = (float)y / (res - 1);
         float height = heights[y, x] * maxHeight;
 
-        Vector3 pos = new Vector3(
+        return terrain.transform.position + new Vector3(
             xf * tData.size.x,
             height,
             yf * tData.size.z
         );
-
-        return terrain.transform.position + pos;
     }
+    
 }

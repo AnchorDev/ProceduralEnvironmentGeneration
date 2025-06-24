@@ -33,6 +33,7 @@ public class TerrainGenerator : MonoBehaviour
 
     void Start()
     {
+        Random.InitState(System.DateTime.Now.Ticks.GetHashCode());
         var terrain = GetComponent<Terrain>();
         tData = terrain.terrainData;
 
@@ -102,37 +103,42 @@ public class TerrainGenerator : MonoBehaviour
         }
     }
 
-    void CarveRiverSinusoidal(float[,] h)
+void CarveRiverSinusoidal(float[,] h)
+{
+    int res = heightmapResolution;
+    float waterNorm = waterLevel / maxHeight;
+    float riverRadius = 5f;
+
+    bool horizontal = Random.value > 0.5f;
+
+    for (int i = 0; i < res; i++)
     {
-        int res = heightmapResolution;
-        float waterNorm = waterLevel / maxHeight;
-        float riverRadius = 5f;
+        float centerOffset = Mathf.Sin(i * 0.03f) * res * 0.2f;
 
-        for (int i = 0; i < res; i++)
+        int cx = horizontal ? i : Mathf.RoundToInt(res * 0.5f + centerOffset);
+        int cy = horizontal ? Mathf.RoundToInt(res * 0.5f + centerOffset) : i;
+
+        for (int dy = -4; dy <= 4; dy++)
         {
-            float y = res * 0.5f + Mathf.Sin(i * 0.03f) * res * 0.2f;
-            int iy = Mathf.RoundToInt(y);
-
-            for (int dy = -4; dy <= 4; dy++)
+            for (int dx = -4; dx <= 4; dx++)
             {
-                for (int dx = -4; dx <= 4; dx++)
-                {
-                    int xi = i + dx;
-                    int yi = iy + dy;
-                    if (xi < 0 || xi >= res || yi < 0 || yi >= res) continue;
+                int xi = cx + dx;
+                int yi = cy + dy;
+                if (xi < 0 || xi >= res || yi < 0 || yi >= res) continue;
 
-                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
-                    if (dist > riverRadius + 1f) continue;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                if (dist > riverRadius + 1f) continue;
 
-                    float t = Mathf.InverseLerp(riverRadius + 1f, 0f, dist);
-                    float targetHeight = Mathf.Lerp(h[yi, xi], waterNorm, t);
+                float t = Mathf.InverseLerp(riverRadius + 1f, 0f, dist);
+                float targetHeight = Mathf.Lerp(h[yi, xi], waterNorm, t);
 
-                    h[yi, xi] = Mathf.Min(h[yi, xi], targetHeight);
-                    isRiver[yi, xi] = true;
-                }
+                h[yi, xi] = Mathf.Min(h[yi, xi], targetHeight);
+                isRiver[yi, xi] = true;
             }
         }
     }
+}
+
 
     void ApplyHeights(float[,] h)
     {
