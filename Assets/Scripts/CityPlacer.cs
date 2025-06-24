@@ -35,34 +35,63 @@ public class CityPlacer : MonoBehaviour
     }
 
 
-    void TryPlaceCity()
+void TryPlaceCity()
+{
+    int attempts = 1000;
+    int sizeInSamples = Mathf.RoundToInt((citySize / tData.size.x) * res);
+
+    float bestAvgHeight = 0f;
+    int bestX = -1, bestY = -1;
+
+    for (int i = 0; i < attempts; i++)
     {
-        int attempts = 1000;
-        int sizeInSamples = Mathf.RoundToInt((citySize / tData.size.x) * res);
+        int x = Random.Range(0, res - sizeInSamples);
+        int y = Random.Range(0, res - sizeInSamples);
 
-        for (int i = 0; i < attempts; i++)
+        float avgHeight = GetAverageHeight(x, y, sizeInSamples);
+
+        if (avgHeight > bestAvgHeight)
         {
-            int x = Random.Range(0, res - sizeInSamples);
-            int y = Random.Range(0, res - sizeInSamples);
-
-            if (!IsAreaDry(x, y, sizeInSamples)) continue;
-
-            float avgHeight = GetAverageHeight(x, y, sizeInSamples);
-            FlattenArea(x, y, sizeInSamples, avgHeight);
-
-            Vector3 pos = HeightToWorldPos(x + sizeInSamples / 2, y + sizeInSamples / 2);
-            pos.y = avgHeight * maxHeight + cityYOffset;
-
-            Instantiate(cityPrefab, pos, Quaternion.identity, transform);
-            cityWorldPos = pos;
-            cityRadius = citySize * 0.6f; // dla uników drzew, niech lekko wykracza
-
-            Debug.Log("City placed at: " + pos);
-            return;
+            bestAvgHeight = avgHeight;
+            bestX = x;
+            bestY = y;
         }
 
-        Debug.LogWarning("City placement failed.");
+        if (IsAreaDry(x, y, sizeInSamples))
+        {
+            PlaceCity(x, y, sizeInSamples, avgHeight);
+            return;
+        }
     }
+
+    if (bestX != -1 && bestY != -1)
+    {
+        PlaceCity(bestX, bestY, sizeInSamples, bestAvgHeight);
+        Debug.LogWarning("City placed at best available (non-ideal) location.");
+    }
+    else
+    {
+        Debug.LogError("City placement completely failed. This should never happen.");
+    }
+}
+
+
+    void PlaceCity(int x, int y, int sizeInSamples, float avgHeight)
+    {
+        FlattenArea(x, y, sizeInSamples, avgHeight);
+
+        Vector3 pos = HeightToWorldPos(x + sizeInSamples / 2, y + sizeInSamples / 2);
+        pos.y = avgHeight * maxHeight + cityYOffset;
+
+        Instantiate(cityPrefab, pos, Quaternion.identity, transform);
+        cityWorldPos = pos;
+        cityRadius = citySize * 0.6f;
+
+        cityPlaced = true;
+        Debug.Log("City placed at: " + pos);
+    }
+
+
 
     bool IsAreaDry(int xStart, int yStart, int size)
     {

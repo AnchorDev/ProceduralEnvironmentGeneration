@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class ForestPlacer : MonoBehaviour
 {
@@ -29,7 +30,23 @@ public class ForestPlacer : MonoBehaviour
 
     void Start()
     {
-        if (!terrain || treePrefabs.Length == 0 || !cityPlacer) return;
+        StartCoroutine(WaitForCityThenPlaceTrees());
+    }
+
+    private IEnumerator WaitForCityThenPlaceTrees()
+    {
+        if (!terrain || treePrefabs.Length == 0)
+            yield break;
+
+        if (cityPlacer == null)
+            cityPlacer = FindObjectOfType<CityPlacer>();
+
+        float timeout = Time.time + 3f;
+        while (cityPlacer.cityWorldPos == Vector3.zero && Time.time < timeout)
+            yield return null;
+
+        cityPos = cityPlacer.cityWorldPos;
+        cityAvoidRadius = 25f;
 
         tData = terrain.terrainData;
         heights = tData.GetHeights(0, 0, tData.heightmapResolution, tData.heightmapResolution);
@@ -52,7 +69,6 @@ public class ForestPlacer : MonoBehaviour
 
             Vector3 pos = HeightToWorldPos(x, y);
             if (Vector3.Distance(pos, cityPos) < cityAvoidRadius) continue;
-
 
             GameObject chosenTree = treePrefabs[Random.Range(0, treePrefabs.Length)];
             Vector3 jitter = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f)) * spacing * 0.3f;

@@ -9,9 +9,9 @@ public class TerrainGenerator : MonoBehaviour
     public float maxHeight = 20f;
 
     [Header("Noise Settings")]
-    public float noiseScale1 = 0.07f;
-    public float noiseScale2 = 0.1f;
-    [Range(0f, 1f)] public float noiseMix = 0.5f;
+    [HideInInspector] public float noiseScale1;
+    [HideInInspector] public float noiseScale2;
+    [Range(0f, 1f)] [HideInInspector] public float noiseMix;
 
     [Header("Mountains")]
     public int mountainCount = 6;
@@ -31,9 +31,22 @@ public class TerrainGenerator : MonoBehaviour
     private TerrainData tData;
     private bool[,] isRiver;
 
+    private float offset1X, offset1Y;
+    private float offset2X, offset2Y;
+
     void Start()
     {
         Random.InitState(System.DateTime.Now.Ticks.GetHashCode());
+
+        noiseScale1 = Random.Range(0.08f, 0.1f);
+        noiseScale2 = Random.Range(0.13f, 0.15f);
+        noiseMix    = Random.Range(0.490f, 0.510f);
+
+        offset1X = Random.Range(0f, 1000f);
+        offset1Y = Random.Range(0f, 1000f);
+        offset2X = Random.Range(0f, 1000f);
+        offset2Y = Random.Range(0f, 1000f);
+
         var terrain = GetComponent<Terrain>();
         tData = terrain.terrainData;
 
@@ -65,8 +78,8 @@ public class TerrainGenerator : MonoBehaviour
                 float nx = (float)x / res;
                 float ny = (float)y / res;
 
-                float n1 = Mathf.PerlinNoise(nx / noiseScale1, ny / noiseScale1);
-                float n2 = Mathf.PerlinNoise((nx + 1000) / noiseScale2, (ny + 1000) / noiseScale2);
+                float n1 = Mathf.PerlinNoise((nx + offset1X) / noiseScale1, (ny + offset1Y) / noiseScale1);
+                float n2 = Mathf.PerlinNoise((nx + offset2X) / noiseScale2, (ny + offset2Y) / noiseScale2);
 
                 h[y, x] = Mathf.Lerp(n1, n2, noiseMix);
             }
@@ -111,12 +124,14 @@ void CarveRiverSinusoidal(float[,] h)
 
     bool horizontal = Random.value > 0.5f;
 
+    float riverBaseOffset = Random.Range(res * 0.25f, res * 0.75f);
+
     for (int i = 0; i < res; i++)
     {
         float centerOffset = Mathf.Sin(i * 0.03f) * res * 0.2f;
 
-        int cx = horizontal ? i : Mathf.RoundToInt(res * 0.5f + centerOffset);
-        int cy = horizontal ? Mathf.RoundToInt(res * 0.5f + centerOffset) : i;
+        int cx = horizontal ? i : Mathf.RoundToInt(riverBaseOffset + centerOffset);
+        int cy = horizontal ? Mathf.RoundToInt(riverBaseOffset + centerOffset) : i;
 
         for (int dy = -4; dy <= 4; dy++)
         {
