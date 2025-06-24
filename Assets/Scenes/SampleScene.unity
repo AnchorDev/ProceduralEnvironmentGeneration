@@ -147,9 +147,9 @@ Transform:
   m_GameObject: {fileID: 171841343}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 133, y: 5, z: 125}
-  m_LocalScale: {x: 25, y: 25, z: 25}
-  m_ConstrainProportionsScale: 1
+  m_LocalPosition: {x: 127, y: 5.5, z: 127}
+  m_LocalScale: {x: 26.000002, y: 1, z: 26.000002}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 514908060}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -378,7 +378,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a392935cff0b2d4a8bf3ca85b0e327a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 10
+  moveSpeed: 1000
   lookSpeedX: 2
   lookSpeedY: 2
   upDownSpeed: 5
@@ -515,6 +515,9 @@ GameObject:
   - component: {fileID: 514908059}
   - component: {fileID: 514908058}
   - component: {fileID: 514908057}
+  - component: {fileID: 514908061}
+  - component: {fileID: 514908062}
+  - component: {fileID: 514908063}
   m_Layer: 0
   m_Name: Terrain
   m_TagString: Untagged
@@ -554,12 +557,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9784ec471207c59419748fce1587f058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 256
-  depth: 256
-  height: 24
-  scale1: 20
-  scale2: 5
-  influence: 0.5
+  terrainSize: 256
+  heightmapResolution: 257
+  maxHeight: 20
+  noiseScale1: 0.1
+  noiseScale2: 0.15
+  noiseMix: 0.5
+  mountainCount: 3
+  mountainMinRadius: 10
+  mountainMaxRadius: 25
+  mountainMinHeight: 0.75
+  mountainMaxHeight: 1
+  riverStartThreshold: 0.7
+  riverWidth: 2
+  waterLevel: 4.5
+  waterPlane: {fileID: 0}
 --- !u!218 &514908059
 Terrain:
   m_ObjectHideFlags: 0
@@ -616,6 +628,68 @@ Transform:
   - {fileID: 171841344}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &514908061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 514908056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13ce7ae9dea0777499c2186c9ac0dd51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  terrain: {fileID: 514908059}
+  treePrefabs:
+  - {fileID: 192044, guid: 19682540d8a014522a319b1cf788aee2, type: 3}
+  - {fileID: 191266, guid: c44bd9bdc114d4a60932c0087d9d1732, type: 3}
+  - {fileID: 137650, guid: 826b6a0b570e8460990010fa615b5a2a, type: 3}
+  maxTrees: 2500
+  minFlatness: 0.895
+  sampleRadius: 5
+  spacing: 0.01
+  riverThreshold: 0.02
+  waterHeight: 5.5
+  cityPos: {x: 0, y: 0, z: 0}
+  cityAvoidRadius: 70
+--- !u!114 &514908062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 514908056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b4d0826fb79c3549a143adab8c14652, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  terrain: {fileID: 514908059}
+  cityPrefab: {fileID: 4895641321909357405, guid: 6d4e82d848e66504b9c446a1013e7220, type: 3}
+  citySize: 40
+  minFlatness: 0.7
+  sampleRadius: 4
+  verticalOffset: 7
+  cityWorldPos: {x: 0, y: 0, z: 0}
+--- !u!114 &514908063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 514908056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 270a916b637d06a4e9d5e5fdf9bf3437, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  terrain: {fileID: 514908059}
+  cityPrefab: {fileID: 4895641321909357405, guid: 6d4e82d848e66504b9c446a1013e7220, type: 3}
+  treePrefabs:
+  - {fileID: 192044, guid: 19682540d8a014522a319b1cf788aee2, type: 3}
+  - {fileID: 191266, guid: c44bd9bdc114d4a60932c0087d9d1732, type: 3}
+  - {fileID: 137650, guid: 826b6a0b570e8460990010fa615b5a2a, type: 3}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0

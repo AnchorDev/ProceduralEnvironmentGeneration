@@ -1,71 +1,146 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Terrain))]
 public class TerrainGenerator : MonoBehaviour
 {
-    public int width = 256;
-    public int depth = 256;
-    public int height = 20;
-    public float scale1 = 20f;
-    public float scale2 = 5f;
-    public float influence = 0.5f;
+    [Header("Terrain Size")]
+    public int terrainSize = 256;
+    public int heightmapResolution = 257;
+    public float maxHeight = 20f;
 
-    private float offsetX;
-    private float offsetZ;
+    [Header("Noise Settings")]
+    public float noiseScale1 = 0.07f;
+    public float noiseScale2 = 0.1f;
+    [Range(0f, 1f)] public float noiseMix = 0.5f;
 
-    private void Start()
+    [Header("Mountains")]
+    public int mountainCount = 6;
+    public float mountainMinRadius = 30f;
+    public float mountainMaxRadius = 50f;
+    public float mountainMinHeight = 0.6f;
+    public float mountainMaxHeight = 0.85f;
+
+    [Header("Rivers")]
+    public float riverStartThreshold = 0.7f;
+    public float riverWidth = 2f;
+
+    [Header("Water")]
+    public float waterLevel = 5.5f;
+    public Transform waterPlane;
+
+    private TerrainData tData;
+    private bool[,] isRiver;
+
+    void Start()
     {
-        offsetX = Random.Range(0f, 10000f);
-        offsetZ = Random.Range(0f, 10000f);
-        GenerateTerrain();
-    }
+        var terrain = GetComponent<Terrain>();
+        tData = terrain.terrainData;
 
-    void GenerateTerrain()
-    {
-        Terrain terrain = GetComponent<Terrain>();
-        terrain.terrainData = GenerateTerrainData(terrain.terrainData);
-    }
+        tData.heightmapResolution = heightmapResolution;
+        tData.size = new Vector3(terrainSize, maxHeight, terrainSize);
 
-    TerrainData GenerateTerrainData(TerrainData terrainData)
-    {
-        terrainData.heightmapResolution = width + 1;
-        terrainData.size = new Vector3(width, height, depth);
-        terrainData.SetHeights(0, 0, GenerateHeights());
-        return terrainData;
-    }
+        float[,] h = new float[heightmapResolution, heightmapResolution];
+        isRiver = new bool[heightmapResolution, heightmapResolution];
 
-    float[,] GenerateHeights()
-    {
-        float[,] heights = new float[width, depth];
+        GenerateBase(h);
+        AddMountains(h);
+        CarveRiverSinusoidal(h);
+        ApplyHeights(h);
 
-        for (int x = 0; x < width; x++)
+        if (waterPlane)
         {
-            for (int z = 0; z < depth; z++)
+            var p = waterPlane.position;
+            waterPlane.position = new Vector3(p.x, waterLevel, p.z);
+        }
+    }
+
+    void GenerateBase(float[,] h)
+    {
+        int res = heightmapResolution;
+        for (int y = 0; y < res; y++)
+        {
+            for (int x = 0; x < res; x++)
             {
-                float xCoord1 = (float)x / width * scale1 + offsetX;
-                float zCoord1 = (float)z / depth * scale1 + offsetZ;
-                float perlinValue1 = Mathf.PerlinNoise(xCoord1, zCoord1);
+                float nx = (float)x / res;
+                float ny = (float)y / res;
 
-                float xCoord2 = (float)x / width * scale2 + offsetX;
-                float zCoord2 = (float)z / depth * scale2 + offsetZ;
-                float perlinValue2 = Mathf.PerlinNoise(xCoord2, zCoord2);
+                float n1 = Mathf.PerlinNoise(nx / noiseScale1, ny / noiseScale1);
+                float n2 = Mathf.PerlinNoise((nx + 1000) / noiseScale2, (ny + 1000) / noiseScale2);
 
-                float combinedHeight = Mathf.Lerp(perlinValue1, perlinValue2, influence);
-
-                if (combinedHeight < 0.3f)
-                {
-                    combinedHeight *= 0.2f;
-                }
-
-                if (combinedHeight > 0.7f)
-                {
-                    float t = (combinedHeight - 0.7f) / (1.0f - 0.7f);
-                    float modified = Mathf.Pow(combinedHeight, 1.5f);
-                    combinedHeight = Mathf.Lerp(combinedHeight, modified, t);
-                }
-
-                heights[x, z] = combinedHeight;
+                h[y, x] = Mathf.Lerp(n1, n2, noiseMix);
             }
         }
-        return heights;
+    }
+
+    void AddMountains(float[,] h)
+    {
+        int res = heightmapResolution;
+        for (int i = 0; i < mountainCount; i++)
+        {
+            int cx = Random.Range(0, res);
+            int cy = Random.Range(0, res);
+            float radius = Random.Range(mountainMinRadius, mountainMaxRadius);
+            float peak = Random.Range(mountainMinHeight, mountainMaxHeight);
+
+            for (int y = 0; y < res; y++)
+            {
+                for (int x = 0; x < res; x++)
+                {
+                    if (isRiver[y, x]) continue;
+
+                    float dx = (x - cx) / radius;
+                    float dy = (y - cy) / radius;
+                    float d2 = dx * dx + dy * dy;
+
+                    if (d2 < 1f)
+                    {
+                        float height = peak * (1f - d2);
+                        h[y, x] = Mathf.Max(h[y, x], height);
+                    }
+                }
+            }
+        }
+    }
+
+    void CarveRiverSinusoidal(float[,] h)
+    {
+        int res = heightmapResolution;
+        float waterNorm = waterLevel / maxHeight;
+        float riverRadius = 5f;
+
+        for (int i = 0; i < res; i++)
+        {
+            float y = res * 0.5f + Mathf.Sin(i * 0.03f) * res * 0.2f;
+            int iy = Mathf.RoundToInt(y);
+
+            for (int dy = -4; dy <= 4; dy++)
+            {
+                for (int dx = -4; dx <= 4; dx++)
+                {
+                    int xi = i + dx;
+                    int yi = iy + dy;
+                    if (xi < 0 || xi >= res || yi < 0 || yi >= res) continue;
+
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    if (dist > riverRadius + 1f) continue;
+
+                    float t = Mathf.InverseLerp(riverRadius + 1f, 0f, dist);
+                    float targetHeight = Mathf.Lerp(h[yi, xi], waterNorm, t);
+
+                    h[yi, xi] = Mathf.Min(h[yi, xi], targetHeight);
+                    isRiver[yi, xi] = true;
+                }
+            }
+        }
+    }
+
+    void ApplyHeights(float[,] h)
+    {
+        int res = heightmapResolution;
+        for (int y = 0; y < res; y++)
+            for (int x = 0; x < res; x++)
+                h[y, x] = Mathf.Clamp01(h[y, x]);
+
+        tData.SetHeights(0, 0, h);
     }
 }

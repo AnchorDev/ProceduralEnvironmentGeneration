@@ -5,10 +5,10 @@ Shader "Custom/Terrain"
         _Texture1 ("Low Altitude Texture", 2D) = "white" {}
         _Texture2 ("Mid Altitude Texture", 2D) = "white" {}
         _Texture3 ("High Altitude Texture", 2D) = "white" {}
-        _BlendHeight1 ("First Blend Height", Range(0,1)) = 0.4
-        _BlendHeight2 ("Second Blend Height", Range(0,1)) = 0.7
+        _BlendHeight1 ("First Blend Height", Range(0,1)) = 0.01
+        _BlendHeight2 ("Second Blend Height", Range(0,1)) = 0.3
         _MaxHeight ("Max Terrain Height", Float) = 20
-    }
+        }
     
     SubShader
     {
